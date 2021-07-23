@@ -152,7 +152,9 @@ func sign(chainParams *chaincfg.Params, tx *wire.MsgTx, idx int,
 	subScript []byte, hashType SigHashType, kdb KeyDB, sdb ScriptDB) ([]byte,
 	ScriptClass, []btcutil.Address, int, error) {
 
-	class, addresses, nrequired, err := ExtractPkScriptAddrs(subScript,
+	subSubScript := StripClaimScriptPrefix(subScript)
+
+	class, addresses, nrequired, err := ExtractPkScriptAddrs(subSubScript,
 		chainParams)
 	if err != nil {
 		return nil, NonStandardTy, nil, 0, err
