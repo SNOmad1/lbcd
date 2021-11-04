@@ -103,6 +103,16 @@ type Config struct {
 	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
 	// records all new transactions it observes into the feeEstimator.
 	FeeEstimator *FeeEstimator
+
+	// AddTxToFeeEstimation defines an optional function to be called whenever a
+	// new transaction is added to the mempool, which can be used to track fees
+	// for the purposes of smart fee estimation.
+	AddTxToFeeEstimation func(txHash *chainhash.Hash, fee, size int64, txType stake.TxType)
+
+	// RemoveTxFromFeeEstimation defines an optional function to be called
+	// whenever a transaction is removed from the mempool in order to track fee
+	// estimation.
+	RemoveTxFromFeeEstimation func(txHash *chainhash.Hash)
 }
 
 // Policy houses the policy (configuration parameters) which is used to
@@ -493,6 +503,12 @@ func (mp *TxPool) removeTransaction(tx *btcutil.Tx, removeRedeemers bool) {
 		delete(mp.pool, *txHash)
 		atomic.StoreInt64(&mp.lastUpdated, time.Now().Unix())
 	}
+
+	// Inform associated fee estimator that the transaction has been removed
+	// from the mempool
+	if mp.cfg.RemoveTxFromFeeEstimation != nil {
+		mp.cfg.RemoveTxFromFeeEstimation(txHash)
+	}
 }
 
 // RemoveTransaction removes the passed transaction from the mempool. When the
@@ -562,6 +578,12 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *btcutil
 	// Record this tx for fee estimation if enabled.
 	if mp.cfg.FeeEstimator != nil {
 		mp.cfg.FeeEstimator.ObserveTransaction(txD)
+	}
+
+	// Inform the associated fee estimator that a new transaction has been added
+	// to the mempool
+	if mp.cfg.AddTxToFeeEstimation != nil {
+		mp.cfg.AddTxToFeeEstimation(tx.Hash(), fee, int64(tx.MsgTx().SerializeSize()), tx.MsgTx().)
 	}
 
 	return txD

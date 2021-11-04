@@ -126,6 +126,12 @@ var helpDescsEnUS = map[string]string{
 	"estimatefee--result0": "Estimated fee per kilobyte in satoshis for a block to " +
 		"be mined in the next NumBlocks blocks.",
 
+	// EstimateSmartFee help.
+	"estimatesmartfee--synopsis":     "Returns the estimated fee using the historical fee data in dcr/kb.",
+	"estimatesmartfee-confirmations": "Estimate the fee rate a transaction requires so that it is mined in up to this number of blocks.",
+	"estimatesmartfee-mode":          "The only supported mode for the moment is 'conservative'.",
+	"estimatesmartfee--result0":      "Estimated fee rate (in LBC/KB).",
+
 	// GenerateCmd help
 	"generate--synopsis": "Generates a set number of blocks (simnet or regtest only) and returns a JSON\n" +
 		" array of their hashes.",

@@ -137,6 +137,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"decoderawtransaction":   handleDecodeRawTransaction,
 	"decodescript":           handleDecodeScript,
 	"estimatefee":            handleEstimateFee,
+	"estimatesmartfee":       handleEstimateSmartFee,
 	"generate":               handleGenerate,
 	"generatetoaddress":      handleGenerateToAddress,
 	"getaddednodeinfo":       handleGetAddedNodeInfo,
@@ -894,6 +895,31 @@ func handleEstimateFee(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 
 	// Convert to satoshis per kb.
 	return float64(feeRate), nil
+}
+
+// handleEstimateSmartFee implements the estimatesmartfee command.
+//
+// The default estimation mode when unset is assumed as "conservative". As of
+// 2018-12, the only supported mode is "conservative".
+func handleEstimateSmartFee(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.EstimateSmartFeeCmd)
+
+	mode := btcjson.EstimateModeConservative
+	if c.EstimateMode != nil {
+		mode = *c.EstimateMode
+	}
+
+	if mode != btcjson.EstimateModeConservative {
+		return nil, internalRPCError("", "Only the default and conservative modes "+
+			"are supported for smart fee estimation at the moment")
+	}
+
+	fee, err := s.cfg.FeeEstimator.EstimateFee(uint32(c.ConfTarget))
+	if err != nil {
+		return nil, internalRPCError(err.Error(), "Could not estimate fee")
+	}
+
+	return fee.ToCoin(), nil
 }
 
 func handleGenerate(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {

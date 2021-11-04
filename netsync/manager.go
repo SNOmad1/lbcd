@@ -1414,6 +1414,13 @@ func (sm *SyncManager) handleBlockchainNotification(notification *blockchain.Not
 		iv := wire.NewInvVect(wire.InvTypeBlock, block.Hash())
 		sm.peerNotifier.RelayInventory(iv, block.MsgBlock().Header)
 
+		if sm.feeEstimator != nil && !sm.server.feeEstimator.IsEnabled() {
+			// fee estimation can only start after we have performed an initial
+			// sync, otherwise we'll start adding mempool transactions at the
+			// wrong height.
+			sm.feeEstimator.Enable(block.Height())
+		}
+
 	// A block has been connected to the main block chain.
 	case blockchain.NTBlockConnected:
 		block, ok := notification.Data.(*btcutil.Block)
@@ -1421,6 +1428,12 @@ func (sm *SyncManager) handleBlockchainNotification(notification *blockchain.Not
 			log.Warnf("Chain connected notification is not a block.")
 			break
 		}
+
+		// Account for transactions mined in the newly connected block for fee
+		// estimation. This must be done before attempting to remove
+		// transactions from the mempool because the mempool will alert the
+		// estimator of the txs that are leaving
+		b.server.feeEstimator.ProcessBlock(block)
 
 		// Remove all of the transactions (except the coinbase) in the
 		// connected block from the transaction pool.  Secondly, remove any

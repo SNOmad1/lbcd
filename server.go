@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"path"
 	"runtime"
 	"sort"
 	"strconv"
@@ -21,6 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lbryio/lbcd/fees"
 
 	"github.com/lbryio/lbcd/addrmgr"
 	"github.com/lbryio/lbcd/blockchain"
@@ -2809,6 +2812,27 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 			mempool.DefaultEstimateFeeMaxRollback,
 			mempool.DefaultEstimateFeeMinRegisteredBlocks)
 	}
+
+	feC := fees.EstimatorConfig{
+		ChainParams:  chainParams,
+		MinBucketFee: cfg.minRelayTxFee,
+		MaxBucketFee: btcutil.Amount(fees.DefaultMaxBucketFeeMultiplier) * cfg.minRelayTxFee,
+		MaxConfirms:  fees.DefaultMaxConfirmations,
+		FeeRateStep:  fees.DefaultFeeRateStep,
+		DatabaseFile: path.Join(dataDir, "feesdb"),
+
+		// 1e5 is the previous (up to 1.1.0) mempool.DefaultMinRelayTxFee that
+		// un-upgraded wallets will be using, so track this particular rate
+		// explicitly. Note that bumping this value will cause the existing fees
+		// database to become invalid and will force nodes to explicitly delete
+		// it.
+		ExtraBucketFee: 1e5,
+	}
+	fe, err := fees.NewEstimator(&feC)
+	if err != nil {
+		return nil, err
+	}
+	s.smartFeeEstimator = fe
 
 	txC := mempool.Config{
 		Policy: mempool.Policy{
