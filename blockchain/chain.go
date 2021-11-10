@@ -595,7 +595,8 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 
 	// Handle LBRY Claim Scripts
 	if b.claimTrie != nil {
-		if err := b.ParseClaimScripts(block, node, view, current); err != nil {
+		shouldFlush := current && b.chainParams.Net != wire.TestNet
+		if err := b.ParseClaimScripts(block, node, view, shouldFlush); err != nil {
 			return ruleError(ErrBadClaimTrie, err.Error())
 		}
 	}
