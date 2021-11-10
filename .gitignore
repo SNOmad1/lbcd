@@ -49,3 +49,6 @@ btcd
 btcctl
 lbcd
 lbcctl
+
+# CI artifacts
+dist
