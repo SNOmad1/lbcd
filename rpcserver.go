@@ -577,7 +577,7 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 		default:
 			return nil, &btcjson.RPCError{
 				Code:    btcjson.ErrRPCInvalidAddressOrKey,
-				Message: "Invalid address or key",
+				Message: "Invalid address or key: " + addr.String(),
 			}
 		}
 		if !addr.IsForNet(params) {
@@ -3238,7 +3238,7 @@ func createVinListPrevOut(s *rpcServer, mtx *wire.MsgTx, chainParams *chaincfg.P
 		// Ignore the error here since an error means the script
 		// couldn't parse and there is no additional information about
 		// it anyways.
-		class, addrs, _, _ := txscript.ExtractPkScriptAddrs(
+		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(
 			originTxOut.PkScript, chainParams)
 
 		// Encode the addresses while checking if the address passes the
@@ -3275,9 +3275,8 @@ func createVinListPrevOut(s *rpcServer, mtx *wire.MsgTx, chainParams *chaincfg.P
 			vinListEntry.PrevOut = &btcjson.PrevOut{
 				Addresses: encodedAddrs,
 				Value:     btcutil.Amount(originTxOut.Value).ToBTC(),
-				IsClaim: class == txscript.NonStandardTy &&
-					(originTxOut.PkScript[0] == txscript.OP_CLAIMNAME || originTxOut.PkScript[0] == txscript.OP_UPDATECLAIM),
-				IsSupport: class == txscript.NonStandardTy && originTxOut.PkScript[0] == txscript.OP_SUPPORTCLAIM,
+				IsClaim:   originTxOut.PkScript[0] == txscript.OP_CLAIMNAME || originTxOut.PkScript[0] == txscript.OP_UPDATECLAIM,
+				IsSupport: originTxOut.PkScript[0] == txscript.OP_SUPPORTCLAIM,
 			}
 		}
 	}

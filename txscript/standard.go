@@ -906,10 +906,10 @@ func scriptHashToAddrs(hash []byte, params *chaincfg.Params) []btcutil.Address {
 // with an invalid script version error.
 func ExtractPkScriptAddrs(pkScript []byte, chainParams *chaincfg.Params) (ScriptClass, []btcutil.Address, int, error) {
 
-	stripped := StripClaimScriptPrefix(pkScript)
+	pkScript = StripClaimScriptPrefix(pkScript)
 
 	// Check for pay-to-pubkey-hash script.
-	if hash := extractPubKeyHash(stripped); hash != nil {
+	if hash := extractPubKeyHash(pkScript); hash != nil {
 		return PubKeyHashTy, pubKeyHashToAddrs(hash, chainParams), 1, nil
 	}
 
